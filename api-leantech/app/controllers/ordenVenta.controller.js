@@ -1,8 +1,10 @@
-const db = require("../models");
+const db = require('../models');
 const Product = db.product;
 const OrdenVenta = db.ordenVenta;
+// eslint-disable-next-line import/order
+const moment = require('moment');
 
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   // Validate request
   if (
     !req.body.fecha ||
@@ -11,18 +13,18 @@ exports.create = (req, res) => {
     !req.body.idProducto
   ) {
     res.status(400).send({
-      message: "Parámetros incompletos.",
+      message: 'Parámetros incompletos.',
     });
     return;
   }
 
-  //Extraemoos los parámetros necesarios
-  let { fecha, nombreProducto, cantidad, idProducto, codigoProducto } =
+  // Extraemoos los parámetros necesarios
+  const { fecha, nombreProducto, cantidad, idProducto, codigoProducto } =
     req.body;
 
   try {
     //Buscamos si ya existe el producto que queremos comprar
-    let product = await Product.findAll({
+    const product = await Product.findAll({
       where: {
         codigo: idProducto,
       },
@@ -32,7 +34,7 @@ exports.create = (req, res) => {
       //Verificamos si existe y si la suma del stock con la cantidad que se va a comprar supera las 30 unidades
       if (product.stock - cantidad >= 0) {
         //Creamos la orden de venta
-        let ordenVenta_result = await OrdenVenta.create({
+        const ordenVenta_result = await OrdenVenta.create({
           fecha: moment(fecha * 1000).format(),
           cantidad: parseInt(cantidad),
           codigoProducto: parseInt(codigoProducto),
@@ -40,7 +42,7 @@ exports.create = (req, res) => {
         });
 
         //Actualizamos el stock del producto
-        let product_result = await Product.update(
+        const product_result = await Product.update(
           {
             stock: product.stock - cantidad,
           },
@@ -51,28 +53,39 @@ exports.create = (req, res) => {
           }
         );
         res.status(200).send({
-          message: "Orden de compra satisfactoria!.",
+          message: 'Orden de compra satisfactoria!.',
         });
         return;
       } else {
         res.status(400).send({
-          message: "La cantidad supera el stock disponible",
+          message:
+            'La cantidad supera el stock disponible o el producto no se encuentra en stock',
         });
         return;
       }
     } else {
       res.status(400).send({
-        message: "El producto no se encuentra en stock",
+        message: 'El producto no se encuentra en stock',
       });
       return;
     }
   } catch (error) {
     res.status(500).send({
       message:
-        "Ocurrió un error al guardar la orden de compra, por favor revise los parámetros.",
+        'Ocurrió un error al guardar la orden de venta, por favor revise los parámetros.',
     });
     return;
   }
 };
 
-exports.findAll = (req, res) => {};
+exports.findAll = (req, res) => {
+  OrdenVenta.findAll()
+    .then((data) => {
+      res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: err.message || 'Ocurrió un error.',
+      });
+    });
+};

@@ -1,14 +1,15 @@
+const moment = require("moment");
 const db = require("../models");
 const Product = db.product;
 const OrdenCompra = db.ordenCompra;
 
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
   // Validate request
   if (
     !req.body.fecha ||
     !req.body.nombreProducto ||
     !req.body.cantidad ||
-    !req.body.idProducto
+    !req.body.codigoProducto
   ) {
     res.status(400).send({
       message: "Parámetros incompletos.",
@@ -17,16 +18,17 @@ exports.create = (req, res) => {
   }
 
   //Extraemoos los parámetros necesarios
-  let { fecha, nombreProducto, cantidad, idProducto, codigoProducto } =
-    req.body;
+  let { fecha, nombreProducto, cantidad, codigoProducto } = req.body;
 
   try {
     //Buscamos si ya existe el producto que queremos comprar
-    let product = await Product.findAll({
+    let product = await Product.findOne({
       where: {
-        codigo: idProducto,
+        codigo: codigoProducto,
       },
     });
+
+    console.log(product);
 
     //Verificamos si existe y si la suma del stock con la cantidad que se va a comprar supera las 30 unidades
     if (product && product.stock + cantidad < 31) {
@@ -65,7 +67,7 @@ exports.create = (req, res) => {
         nombreProducto,
       });
       let product_result = await Product.create({
-        stock: product.stock + cantidad,
+        stock: cantidad,
         nombre: nombreProducto,
         codigo: codigoProducto,
       });
@@ -81,6 +83,7 @@ exports.create = (req, res) => {
       return;
     }
   } catch (error) {
+    console.log(error);
     res.status(500).send({
       message:
         "Ocurrió un error al guardar la orden de compra, por favor revise los parámetros.",
@@ -89,4 +92,14 @@ exports.create = (req, res) => {
   }
 };
 
-exports.findAll = (req, res) => {};
+exports.findAll = (req, res) => {
+  OrdenCompra.findAll()
+    .then((data) => {
+      res.send(data);
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: err.message || "Ocurrió un error.",
+      });
+    });
+};
