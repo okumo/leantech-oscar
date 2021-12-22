@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  api-leantech:
+    container_name: "api-leantech"
+    env_file: ./api-leantech/.env
+    build:
+      context: ./api-leantech
+      dockerfile: ./Dockerfile
+    depends_on:
+      - "mysql-server-leantech"
+    stdin_open: true
+    environment:
+      TZ: "America/Lima"
+    ports:
+      - 8080:8080
+    volumes:
+      - ./api-leantech:/app
+      - /app/node_modules
+    restart: always
+  
+  mysql-server-leantech:
+    container_name: "mysql-server-leantech"
+    env_file: ./api-leantech/.env
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+      - MYSQL_PASSWORD=$MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - MYSQL_TCP_PORT=3306
+    ports:
+      - $MYSQLDB_LOCAL_PORT:3306
+    restart: unless-stopped
+    volumes:
+      - mysql_leantech:/var/lib/mysql
+      - mysql_leantech_config:/etc/mysql
+volumes:
+  mysql_leantech:
+  mysql_leantech_config:
